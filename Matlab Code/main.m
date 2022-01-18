@@ -3,14 +3,15 @@ clear all
 close all
 tic;
 
-location = 'F:\carbon nano\Jacques Doumani data\Optical Image\P1\50x\*.bmp'; %  folder in which the images exist
-     
+% Load the image from drive location
+location = 'F:\carbon nano\Jacques Doumani data\Optical Image\P5\50x\*.bmp';
+
 ds = imageDatastore(location);         %  Creates a datastore for all images in your folder
 noofportion = zeros(1,63);
 count = 1;
 
 
-% for 100 blocks we will calculate the power of fourier spectrum in 63 orientational direction. the orientation angle will be represented by radian
+% for 100 blocks we will calculate the power of fourier spectrum in 63 orientational direction. the orientation angle will be represented by radian. It will finally converted to degree angle.
 
 power = zeros(100,63);
 
@@ -25,15 +26,15 @@ while hasdata(ds)
 %process input image
 src = read(ds);
 
+% figure(),imshow(src,[]);
 % if rgb convert it to gray scale version
 if numel(size(src))==3
     src = rgb2gray(src);
 end
 
 % figure(),imshow(src,[]);
-
-% Image decomposition
-
+% imwrite(src, fullfile('F:\carbon nano\Jacques Doumani data\Optical Image\P4\P4_10x\block', [num2str(count), '.bmp']));
+%% Image decomposition
 lambda=0.8;
 I = src;
 I_s = decomposition_function(uint8(I),lambda,4,2);
@@ -46,8 +47,8 @@ I = I_t;
 % figure,imshow(I_s,[]);
 % figure,imshow(I_t,[]);
 
-% make the image a squared one so that we can apply the radial summation operation uniformly
-
+% make the image a squared one so that we can apply the radial summation
+% operation uniformly
 width = rows;
 halfWidth = floor(width /2);
 col1 = floor(rows/2) - halfWidth;
@@ -99,7 +100,7 @@ hold on
 L(L~=1) = 255;
 L  = imcomplement(L);
 
-% Fourier Subtraction 
+% Fourier Subtraction technique
 
 F2 = fft2(double(L));
 shF = fftshift(F2);
@@ -118,7 +119,7 @@ imgfpcirc = abs(imgfpcirc1-imgfpcirc2);
 imgfpcirc = imrotate(imgfpcirc,-90);
 
 % figure(), imshow(imgfpcirc,[]);
-
+% imwrite(imgfpcirc, fullfile('F:\carbon nano\Jacques Doumani data\Optical Image\P4\P4_10x\rs', [num2str(count), '.bmp']));
 [N M] = size(imgfpcirc);
 
 dimDiff = abs(N-M);
@@ -171,6 +172,9 @@ else
     maxtheta = find(thetauni==randsample((thetauni(y==max(y))),1));
 end
 
+mth(count) = maxtheta;
+
+
 
 power(count,:) = y;
 
@@ -179,31 +183,13 @@ den = 0;
 c=0;
 
 
-% for j=1:length(thetauni)
-%     c = cos((thetauni(j)))^2;
-%     num = num + y(j)*c*sin(thetauni(j));
-%     den = den + (y(j)*sin(thetauni(j)));
-% end
-% S(count) = abs((3*(num/den)-1)/2);
+
 for j=1:length(thetauni)
     c = cos((thetauni(j)))^2;
     num = num + (y(j)*c);
     den = den + (y(j));
 end
 S(count) = abs((2*(num/den)-1));
-
-% xi = linspace(min(x), max(x), 180);  
-% y_1 = interp1(x, y, xi, 'spline', 'extrap');
-% y_1 = (y_1-min(y_1))/(max(y_1)-min(y_1));
-% y_1 = circshift(y_1,1-maxtheta);
-% y_1(xi==max(xi))=y_1(xi==min(xi));
-% x_1 = (xi*180)/pi;
-% fig = figure('visible',false);
-% plot(x_1, y_1, 'linewidth', 3);
-% frame = getframe(fig);
-% im = frame2im(frame);
-% [A,map] = rgb2ind(im,256);
-% imwrite(A, map, fullfile('F:\carbon nano\Jacques Doumani data\Optical Image\P4\P4_10x\distribution', [num2str(count), '.bmp']));
 
 
 count = count+1
@@ -225,7 +211,7 @@ yfinal = circshift(yfinal,1-maxtheta);
 %%%%
 xi(xi==max(xi))=pi;
 xi(xi==min(xi))=0;
-y(xi==max(xi))=y(xi==min(xi));
+% y(xi==max(xi))=y(xi==min(xi));
 
 
 yfinal(yfinal<0.2)=0;
@@ -247,12 +233,14 @@ for j=1:length(thetauni)
 end
 x = (xi*180)/pi;
 Sfinal = abs((2*(num/den)-1));
-figure(), plot(x, y, 'linewidth', 3);
+y = circshift(y,90)
+y = smooth(y);
+figure(), fig(1) = plot(x-90, y, 'linewidth', 3);
 ylabel('Normalized Power(AU)','Fontsize',30);
 xlabel('orientation(Degree)','Fontsize',30);
 set(gca,'fontsize',30);
-xlim([0 177])
+xlim([-90 90])
 ylim([0 1])
-
+% saveas(fig(1),'F:\carbon nano\Jacques Doumani data\New OI\P2_LE1_glass_blocks\image5po\od.jpg');
 toc;
 
